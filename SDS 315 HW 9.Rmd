@@ -160,4 +160,4 @@ C. False, the model_C table shows that both coefficients are near 0 in the regre
 
 D. This is false. When observing the differences between model_D1 and model_D2, the minority coefficient is almost completely gone in the second table, reduced to only 0.01. This indicates that it is no longer a substantial factor in the regression graph, however, in model_E, fire has a more substantial coefficient than income, showing that income does not account for all of the difference. Even if minority disappears, income cannot accurately account for the difference.
 
-E. True. Observing the coefficient in the "Multiple Predictors" table for minority, we can see it is still positive. The 95% interval also is above 0. This indicates that minority is still significant in predicting the FAIR policies, even after faceting everything else out.
+E. True. Observing the coefficient in the "Multiple Predictors" table for minority, we can see it is still positive. The 95% interval also is above 0. This indicates that minority is still significant in predicting the FAIR policies, even after factoring everything else out.
