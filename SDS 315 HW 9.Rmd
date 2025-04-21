@@ -1,0 +1,163 @@
+---
+title: "Homework 9"
+author: "Prady Kandi, EID: prk599"
+date: "2025-04-21"
+output:
+  pdf_document:
+    toc: true
+urlcolor: blue
+---
+
+
+The link to the Github repo containing the R file can be found [here](https://github.com/PradyK756/SDS-315-HW9).
+
+\newpage
+
+
+
+```{r imports, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(mosaic)
+library(knitr)
+library(effectsize)
+library(moderndive)
+```
+
+```{r setup, echo = FALSE}
+groceries <- read.csv("groceries.csv")
+solder <- read.csv("solder.csv")
+groceries <- groceries |>
+  mutate(Type = str_trim(Type))
+redline <- read.csv("redlining.csv")
+```
+
+# Problem 1
+
+## Part A
+
+```{r, echo = FALSE}
+solder |>
+  ggplot(aes(x = skips, color = Opening)) + geom_boxplot() + labs(x = "Skips", y = "Opening Size", title = "Distribution of Skips by Opening Size") + theme( axis.text.y = element_blank(), axis.ticks.y = element_blank())
+```
+     
+        Caption: Graph showing the distribution of skips by opening size
+     
+     
+```{r, echo = FALSE}
+solder |>
+  ggplot(aes(x = skips, color = Solder)) + geom_boxplot() + labs(x = "Skips", y = "Alloy Thickness", color = "Thickness", title = "Distribution of Skips by Alloy Thickness") + theme( axis.text.y = element_blank(), axis.ticks.y = element_blank())
+```
+
+        Caption: Graph showing the distribution of skips by soldering thickness
+
+## Part B
+
+```{r, echo = FALSE}
+solderlm <- lm(skips ~ Opening + Solder + Solder:Opening, data = solder)
+```
+
+
+```{r, echo = FALSE}
+solder_table <- get_regression_table(solderlm, conf.level = 0.95, digits=2)
+solder_kable <- solder_table |>
+  select(Term = term, Estimate = estimate, Lower_Bound = lower_ci, Upper_Bound = upper_ci)
+kable(solder_kable)
+```
+## Part C
+
+The baseline level of skips, where the opening is large and the alloy is thick, is 0.39. If we keep the baseline of a thick alloy but use a medium opening, an additional 2.41 skips is expected, and 5.13 skips if a small opening is used. However, if a large opening is used with a thin alloy, an extra 2.28 skips can be expected to occur. With a medium opening and thin alloy, there will actually be an average of -0.74 less skips, but a small opening with a thin alloy yields the worst results, adding an average of 9.65 skips.
+
+## Part D
+
+When setting a regression model with a large opening and thick solder as a baseline, every other combination resulted in more skips except the Medium opening with a thin alloy. Thus, if AT&T's goal is to cut down on skips, the best combination would be to use a medium opening size and a thin solder thickness.
+
+# Problem 2
+
+## Part A
+
+```{r, echo = FALSE}
+groceries |>
+  group_by(Store) |>
+  summarize(mean_Price = mean(Price)) |>
+  ggplot(aes(x = fct_rev(Store), y = mean_Price)) + geom_col(fill = "skyblue2", color = "darkblue") + coord_flip() + labs(x = "Store", y = "Mean Price", title = "Mean Price per Product per Store", caption = "Graph displays the average price across all products at each store")
+```
+
+## Part B
+
+```{r, echo = FALSE}
+groceries |>
+  group_by(Product) |>
+  summarize(num_Stores = n()) |>
+  ggplot(aes(x = fct_rev(Product), y = num_Stores)) + geom_col(fill = "mediumseagreen", color = "black") + coord_flip() + labs(x = "Product", y = "Number of Stores", title = "Number of Stores Selling Each Product", caption = "This graph displays the availability of each product, i.e. how many stores have each product available")
+```
+
+## Part C
+
+```{r, echo = FALSE}
+groceries <- groceries |>
+  mutate(Type = relevel(factor(Type), ref = "Grocery"))
+
+storelm1 <- lm(Price ~ Product + Type, data = groceries)
+
+
+storelm1_table <- get_regression_table(storelm1, conf.level = 0.95, digits=2)
+
+storelm1_kable <- storelm1_table |>
+  filter(term == "Type: Convenience") |>
+  select(Store_Type = term, Estimate = estimate, Lower_Bound = lower_ci, Upper_Bound = upper_ci)
+
+kable(storelm1_kable)
+```
+Compared with ordinary grocery stores (like Albertsons, HEB, or Krogers), convenience stores charge somewhere between 41 and 92 cents more for the same product, with the mean being 66 cents. 
+
+## Part D
+
+```{r, echo = FALSE}
+storelm2 <- lm(Price ~ Product + Store, data = groceries)
+
+storelm2_table <- get_regression_table(storelm2, conf.level = 0.95, digits=2)
+
+storelm2_kable <- storelm2_table|>
+  filter(str_detect(term, "Store")) |>
+  select(Store = term, Estimate = estimate, Lower_Bound= lower_ci, Upper_Bound = upper_ci) |>
+  arrange(desc(Estimate))
+
+kable(storelm2_kable)
+```
+
+Observing the Estimate statistic, the stores with the 2 most expensive prices per product are Whole Foods and Wheatsville Food Co-Op, with a 36 and 29 cent increase above the baseline, respectively. Walmart and Kroger Fresh Fare have the lowest prices, with 99 and 90 cents below the baseline.
+
+## Part E
+
+When examining the difference between Central Market's and HEB's prices, we want to account for difference in type of products being sold. After doing so with the previous model, the difference in true pricing between HEB and Central Market is 8 cents, with Central Market being 57 cents below baseline and HEB being 65 cents below. Among the 13 stores, the largest difference is 135 cents, so we can expect around a 10 cent difference between adjacent stores. Considering the difference of 7 cents between these two, we can say HEB and Central Market charge similar prices for the same product.
+
+## Part F
+```{r, echo = FALSE}
+groceriesF <- groceries |>
+  mutate(Income10K = Income/10000)
+
+storelm3 <- lm(Price ~ Product + Income10K, data = groceriesF)
+round(coef(storelm3)["Income10K"], 3)
+```
+The Income10K coefficient is negative, which indicates that poor people pay more for the same groceries than those who are richer. A negative coefficient shows that the regression line slopes down and to the right, which in the context of this graph is a higher income (x) leading to a lower price (y).
+
+
+```{r, echo = FALSE}
+standardize_parameters(storelm3) |>
+  filter(Parameter == "Income10K") |>
+  kable()
+```
+A one-standard deviation increase in the income of a ZIP code seems to be associated with a .03 standard-deviation decrease in the price that consumers in that ZIP code expect to pay for the same product.
+
+# Problem 3
+
+A. True. No other factors are present here, so looking at Figure A1 does in fact confirm that there is a correlation between minority percentage and FAIR policies. The 51.6% also demonstrates that the minority category makes up a majority of the variation of FAIR policies.
+
+B. This statement is undecidable. From the previous statement, we know that minority and FAIR policies are positively correlated. In figure B1, we can also see a positive correlation between housing age and minority percentage. Unfortunately, there is not model or regression table that focuses on all three of these values at once, so it is impossible to determine if the two are synergistic, or one is simply an effect of the other. In order to confirm whether minority percentage and age have an interaction, a regression model contrasting these again price would be best. 
+
+C. False, the model_C table shows that both coefficients are near 0 in the regression model. They both have equal influence, that is, none. To further reinforce this, we can see the that the slope's of the red and blue line in Figure C1 are near identical.
+
+D. This is false. When observing the differences between model_D1 and model_D2, the minority coefficient is almost completely gone in the second table, reduced to only 0.01. This indicates that it is no longer a substantial factor in the regression graph, however, in model_E, fire has a more substantial coefficient than income, showing that income does not account for all of the difference. Even if minority disappears, income cannot accurately account for the difference.
+
+E. True. Observing the coefficient in the "Multiple Predictors" table for minority, we can see it is still positive. The 95% interval also is above 0. This indicates that minority is still significant in predicting the FAIR policies, even after faceting everything else out.
